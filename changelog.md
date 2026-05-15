@@ -1,3 +1,6 @@
+# 1.0.5
+- Fixed crash on startup MacOS
+
 # 1.0.4
 - Disabled smooth caret in geode mod settings due to strange behaviour
 

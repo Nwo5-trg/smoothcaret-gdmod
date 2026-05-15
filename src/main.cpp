@@ -16,13 +16,17 @@ class $modify(MyCCTextInputNode, CCTextInputNode) {
             return false;
         }
 
-		Loader::get()->queueInMainThread([this]() {
+		Ref<MyCCTextInputNode> aliveNode = this;
+
+		Loader::get()->queueInMainThread([aliveNode]() {
 			if (CCScene::get()->getChildByType<ModSettingsPopup>(0)) {
-				return true; 
+				return; 
 			}
 
-			auto children = this->getChildren();
-			if (!children) return true;
+			if (!aliveNode || !aliveNode->getParent()) return;
+
+			auto children = aliveNode->getChildren();
+			if (!children) return;
 
 			for (auto* child : CCArrayExt<CCNode*>(children)) {
 				if (auto* label = typeinfo_cast<CCLabelBMFont*>(child)) {
@@ -30,7 +34,7 @@ class $modify(MyCCTextInputNode, CCTextInputNode) {
 					if (content == "|") {
 						// log::info("fntfile: {}", label->getFntFile());
 						if (std::string_view(label->getFntFile()) == "chatFont.fnt" ) {
-							m_fields->m_trueCaret = label;
+							aliveNode->m_fields->m_trueCaret = label;
 							break;
 						}
 						
@@ -38,12 +42,13 @@ class $modify(MyCCTextInputNode, CCTextInputNode) {
 				}
 			}
 
-			auto trueCaret = m_fields->m_trueCaret;
+			auto trueCaret = aliveNode->m_fields->m_trueCaret;
 
 			if (!trueCaret) {
 				log::warn("Could not find the true caret");
-				return true; 
+				return; 
 			}
+
 			auto smoothCaret = CCLabelBMFont::create("|", "chatFont.fnt");
 			smoothCaret->setColor(trueCaret->getColor());
 			smoothCaret->setOpacity(trueCaret->getOpacity());
@@ -63,14 +68,15 @@ class $modify(MyCCTextInputNode, CCTextInputNode) {
 
 			trueCaret->getParent()->addChild(smoothCaret);
 
-			this->schedule(schedule_selector(MyCCTextInputNode::updSmoothCaret));
-			m_fields->m_smoothCaret = smoothCaret;
-			return true;
+			aliveNode->schedule(schedule_selector(MyCCTextInputNode::updSmoothCaret));
+			aliveNode->m_fields->m_smoothCaret = smoothCaret;
+			return;
 		});
 		return true;
     }
 
 	void updSmoothCaret(float dt) {
+
 		auto trueCaret = m_fields->m_trueCaret;
 		auto smoothCaret = m_fields->m_smoothCaret;
 		if (!trueCaret || !smoothCaret) return;
